@@ -280,30 +280,37 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 0.5rem;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0 1rem;
 }
 
 .header-panel {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  width: 100%;
+  align-items: center;
+  text-align: center;
 }
 
 .page-title {
   font-size: clamp(2.4rem, 5vw, 4.4rem);
   line-height: 1.02;
   letter-spacing: -0.08em;
-  max-width: 12ch;
-  margin: 0;
+  width: min(100%, 92ch);
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 .page-copy {
-  max-width: 74ch;
+  width: min(100%, 92ch);
+  max-width: 100%;
   color: rgba(235, 244, 255, 0.8);
   font-size: 1rem;
   line-height: 1.75;
+  margin: 0 auto;
 }
 
 .dashboard-grid {
