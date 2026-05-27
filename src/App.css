@@ -1,5 +1,3 @@
-/* Ocean Consequence - Extracted Styles */
-
 :root {
   --color-bg: #05111c;
   --color-slate-950: #020c1b;
@@ -66,7 +64,6 @@ body {
   }
 }
 
-/* Inner Container */
 .app-inner {
   display: flex;
   flex-direction: column;
@@ -76,7 +73,6 @@ body {
   margin: 0;
 }
 
-/* Scene Canvas - Tailwind utilities */
 .scene-canvas {
   position: relative;
   width: 100%;
@@ -268,7 +264,6 @@ body {
   border-radius: 1.6rem;
 }
 
-/* Landing interface */
 .app-container {
   min-height: 100vh;
   background: radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 28%),
@@ -993,7 +988,6 @@ body {
   padding: 1rem;
 }
 
-/* Header */
 .header {
   border-radius: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1069,7 +1063,6 @@ body {
   gap: 0.75rem;
 }
 
-/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -1104,7 +1097,6 @@ body {
   background-color: rgba(110, 231, 183, 0.18);
 }
 
-/* Main Layout */
 .main-content {
   display: grid;
   grid-template-columns: 1fr;
@@ -1119,7 +1111,6 @@ body {
   }
 }
 
-/* Scene Section */
 .scene-section {
   display: flex;
   flex-direction: column;
@@ -1127,7 +1118,6 @@ body {
   min-width: 0;
 }
 
-/* Scene Canvas */
 .scene-canvas {
   position: relative;
   overflow: hidden;
@@ -1147,7 +1137,6 @@ body {
   }
 }
 
-/* Scene Content */
 .scene-content {
   position: absolute;
   inset: 0;
@@ -1165,7 +1154,6 @@ body {
   }
 }
 
-/* Scene Grid */
 .scene-grid {
   display: flex;
   flex-direction: column;
@@ -1181,7 +1169,6 @@ body {
   }
 }
 
-/* Info Cards */
 .info-card {
   border-radius: 1.25rem;
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -1222,7 +1209,6 @@ body {
   line-height: 1.5;
 }
 
-/* Commentary Section */
 .commentary-section {
   border-radius: 1.25rem;
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -1302,7 +1288,6 @@ body {
   ring: 1px solid rgba(165, 243, 252, 0.3);
 }
 
-/* Tags */
 .tags {
   margin-top: 1rem;
   display: flex;
@@ -1321,7 +1306,6 @@ body {
   padding: 0.5rem 0.75rem;
 }
 
-/* Stats Section */
 .stats-section {
   display: grid;
   gap: 1.25rem;
@@ -1407,7 +1391,6 @@ body {
   color: var(--color-slate-400);
 }
 
-/* Tone Card */
 .tone-card {
   border-radius: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1449,7 +1432,6 @@ body {
   color: var(--color-slate-500);
 }
 
-/* Sidebar */
 .sidebar {
   position: sticky;
   top: 2rem;
@@ -1487,7 +1469,6 @@ body {
   color: var(--color-slate-300);
 }
 
-/* Dial Controls */
 .dial-controls {
   display: flex;
   flex-direction: column;
@@ -1609,7 +1590,6 @@ body {
   color: var(--color-slate-500);
 }
 
-/* Story State */
 .story-state {
   margin-top: 1rem;
   border-radius: 1.5rem;
@@ -1632,7 +1612,6 @@ body {
   color: var(--color-slate-200);
 }
 
-/* SVG Icons */
 .icon {
   display: inline-block;
   vertical-align: middle;
@@ -1648,7 +1627,6 @@ body {
   width: 2.75rem;
 }
 
-/* Animations */
 @keyframes floatUp {
   0% {
     transform: translate3d(0, 14px, 0) scale(0.95);
@@ -1681,7 +1659,6 @@ body {
   background-size: 22px 22px;
 }
 
-/* Bubble */
 .bubble {
   position: absolute;
   border-radius: 9999px;
@@ -1691,7 +1668,6 @@ body {
   animation-delay: var(--delay);
 }
 
-/* Water Scene */
 .water-scene {
   position: absolute;
   inset: 0;
@@ -1794,7 +1770,6 @@ body {
   height: 1.25rem;
 }
 
-/* Waves */
 .waves-container {
   position: absolute;
   inset-x: 0;
@@ -1811,7 +1786,6 @@ body {
   opacity: 0.9;
 }
 
-/* Light */
 .light-glow {
   position: absolute;
   left: 50%;
@@ -1824,7 +1798,6 @@ body {
   filter: blur(48px);
 }
 
-/* Gradient overlays */
 .gradient-overlay-1 {
   position: absolute;
   inset: 0;
@@ -1875,7 +1848,6 @@ body {
   filter: blur(24px);
 }
 
-/* Utility classes */
 .pointer-events-none {
   pointer-events: none;
 }
