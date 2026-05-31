@@ -1,23 +1,71 @@
-import { useMemo, useState } from 'react'
-import './App.css'
+import { useMemo, useState, useRef, useEffect } from "react"
+import "./App.css"
 
-const defaultMetrics = {
-  seaLevel: 12,
-  plastic: 4,
-  pollution: 4,
-  temperature: 3,
-  coralLoss: 4,
-  wind: 5,
+// Real units, ranges and published defaults
+// Units chosen from authoritative sources:
+// - Sea level: millimetres (mm) — NOAA reports ~94.4 mm since 1993
+// - Plastic: million tonnes per year (Mt/yr) entering oceans — OWID ~1.7 Mt/yr
+// - Pollution: atmospheric CO2 in parts per million (ppm) — NASA/NOAA 431 ppm (Apr 2026)
+// - Temperature: global annual anomaly in °C — NASA GISS ~1.19 °C (2025)
+// - Coral loss: percent (%) of reef areas affected by bleaching-level heat stress — NOAA/ICRI ~84%
+// - Wind: change in ocean surface wind expressed as percent change per year (%/yr) — literature reports ~0.074%/yr trend
+
+const metricMeta = {
+  seaLevel: { unit: "cm", min: 0, max: 50, step: 0.1, decimals: 1 },
+  plastic: { unit: "Mt/yr", min: 0, max: 8, step: 0.1, decimals: 1 },
+  pollution: { unit: "ppm", min: 0, max: 600, step: 1, decimals: 0 },
+  temperature: { unit: "°C", min: -10, max: 10, step: 0.1, decimals: 1 },
+  coralLoss: { unit: "%", min: 0, max: 100, step: 1, decimals: 0 },
+  wind: { unit: "%/yr", min: -1, max: 1, step: 0.025, decimals: 3 },
 }
 
 const metricConfig = [
-  { key: 'seaLevel', label: 'Sea Level', unit: 'cm', max: 50 },
-  { key: 'plastic', label: 'Plastic', unit: '/10', max: 10 },
-  { key: 'pollution', label: 'Pollution', unit: '/10', max: 10 },
-  { key: 'temperature', label: 'Temperature', unit: '°C', max: 20 },
-  { key: 'coralLoss', label: 'Coral Loss', unit: '/10', max: 10 },
-  { key: 'wind', label: 'Wind/Current', unit: '/10', max: 10 },
+  { key: "seaLevel", label: "Sea Level" },
+  { key: "plastic", label: "Plastic" },
+  { key: "pollution", label: "Pollution" },
+  { key: "temperature", label: "Temperature" },
+  { key: "coralLoss", label: "Coral Loss" },
+  { key: "wind", label: "Wind/Current" },
 ]
+
+// Published defaults (actual units)
+const defaultMetrics = {
+  seaLevel: 10.1, // mm since 1993 (NOAA)
+  plastic: 1.7, // Mt/yr entering oceans (Our World in Data)
+  pollution: 431, // ppm CO2 (NASA/NOAA Apr 2026)
+  temperature: 1.2, // °C anomaly (NASA 2025)
+  coralLoss: 84, // % reefs affected by bleaching heat stress (2023-2025)
+  wind: 0.075, // %/yr change in ocean surface winds (literature)
+}
+
+const publishedMetrics = { ...defaultMetrics }
+
+const publishedMetricNotes = {
+  seaLevel: "101.4 mm (3.99 inches) since 1993 (NOAA)",
+  plastic: "1.7 Mt/yr entering the ocean (Our World in Data)",
+  pollution: "431 ppm CO2 (NASA/NOAA, Apr 2026)",
+  temperature: "1.19 °C (2.14 °F) anomaly (NASA 2025)",
+  coralLoss: "~84.4% of reefs hit by bleaching-level heat stress, 2023-2025 (NOAA/ICRI)",
+  wind: "Ocean surface winds rising ~0.074% per year (peer-reviewed summaries)",
+}
+
+const publishedMetricLinks = {
+  seaLevel: "https://www.climate.gov/news-features/understanding-climate/climate-change-global-sea-level",
+  plastic: "https://ourworldindata.org/plastic-pollution",
+  pollution: "https://climate.nasa.gov/vital-signs/carbon-dioxide/",
+  temperature: "https://climate.nasa.gov/vital-signs/global-temperature/",
+  coralLoss: "https://coralreefwatch.noaa.gov/satellite/research/coral_bleaching_report.php",
+  wind: "https://www.cell.com/heliyon/fulltext/S2405-8440(25)01169-7?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS2405844025011697%3Fshowall%3Dtrue",
+}
+
+const optimizeMetrics = {
+  seaLevel: 0,
+  plastic: 0,
+  pollution: 280,
+  temperature: 0,
+  coralLoss: 0,
+  wind: 0,
+}
 
 const commentSets = {
   denial: [
@@ -36,77 +84,167 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
 function App() {
   const [metrics, setMetrics] = useState(defaultMetrics)
+  const holdTimer = useRef(null)
+  const holdDelta = useRef(0)
+
+  const formatValue = (key, value) => {
+    const meta = metricMeta[key]
+    if (!meta) return `${value}`
+    return `${Number(value).toFixed(meta.decimals)} ${meta.unit}`
+  }
+
+    const [editingKey, setEditingKey] = useState(null)
+    const [editValue, setEditValue] = useState("")
+
+    const startEdit = (key) => {
+      stopAdjust()
+      const meta = metricMeta[key]
+      if (!meta) return
+      setEditingKey(key)
+      setEditValue(String(Number(metrics[key]).toFixed(meta.decimals)))
+    }
+
+    const commitEdit = () => {
+      if (!editingKey) return
+      const meta = metricMeta[editingKey]
+      let v = parseFloat(editValue)
+      if (Number.isNaN(v)) {
+        setEditingKey(null)
+        return
+      }
+      v = clamp(Number(v.toFixed(meta.decimals)), meta.min, meta.max)
+      setMetrics((cur) => ({ ...cur, [editingKey]: v }))
+      setEditingKey(null)
+    }
+
+    const cancelEdit = () => setEditingKey(null)
 
   const handleChange = (key, amount) => {
+    const meta = metricMeta[key]
+    if (!meta) return
     setMetrics((current) => ({
       ...current,
-      [key]: clamp(current[key] + amount, 0, metricConfig.find((item) => item.key === key).max),
+      [key]: clamp(Number((current[key] + amount).toFixed(meta.decimals)), meta.min, meta.max),
     }))
   }
 
-  const resetMetrics = () => {
-    setMetrics(defaultMetrics)
+  const stopAdjust = () => {
+    if (holdTimer.current) {
+      clearInterval(holdTimer.current)
+      holdTimer.current = null
+      holdDelta.current = 0
+    }
   }
 
-  const overallScore = useMemo(() => {
-    const sum = metricConfig.reduce((acc, item) => acc + metrics[item.key] / item.max, 0)
-    return sum / metricConfig.length
+  const startAdjust = (key, direction) => {
+    const meta = metricMeta[key]
+    if (!meta) return
+    // perform immediate change
+    handleChange(key, direction * meta.step)
+    stopAdjust()
+    holdDelta.current = direction * meta.step
+    holdTimer.current = setInterval(() => {
+      handleChange(key, holdDelta.current)
+    }, 120)
+  }
+
+  // cleanup on unmount
+  useEffect(() => {
+    return () => stopAdjust()
+  }, [])
+
+  const optimizeMetrics = {
+    seaLevel: 0,
+    plastic: 0,
+    pollution: 280,
+    temperature: 0,
+    coralLoss: 0,
+    wind: 0,
+  }
+
+  const normalized = useMemo(() => {
+    const out = {}
+    metricConfig.forEach((item) => {
+      const meta = metricMeta[item.key]
+      const v = metrics[item.key]
+      // For symmetric ranges (e.g., temp -10 to 10, wind -1 to 1), normalize based on absolute value
+      // so that 0 is optimal and both negatives and positives increase damage equally
+      if (meta.min < 0 && meta.max > 0 && Math.abs(meta.min) === Math.abs(meta.max)) {
+        out[item.key] = clamp(Math.abs(v) / meta.max, 0, 1)
+      } else if (item.key === "pollution") {
+        // For pollution, 280 ppm is optimal; normalize based on distance from 280
+        const optimalPollution = 280
+        const maxDist = Math.max(optimalPollution - meta.min, meta.max - optimalPollution)
+        out[item.key] = clamp(Math.abs(v - optimalPollution) / maxDist, 0, 1)
+      } else {
+        out[item.key] = clamp((v - meta.min) / (meta.max - meta.min), 0, 1)
+      }
+    })
+    return out
   }, [metrics])
 
+  const overallScore = useMemo(() => {
+    const sum = metricConfig.reduce((acc, item) => acc + normalized[item.key], 0)
+    return sum / metricConfig.length
+  }, [normalized])
+
   const stage = useMemo(() => {
-    if (overallScore < 0.28) return 'restored'
-    if (overallScore < 0.5) return 'denial'
-    if (overallScore < 0.75) return 'uncertainty'
-    return 'quiet'
+    if (overallScore < 0.28) return "restored"
+    if (overallScore < 0.5) return "denial"
+    if (overallScore < 0.75) return "uncertainty"
+    return "quiet"
   }, [overallScore])
 
   const damageMessage = {
-    restored: 'A faint pulse of relief appears as balance begins to return.',
-    denial: 'Early comments read like skepticism and social media shrug.',
-    uncertainty: 'The tone shifts to nervous uncertainty and paused scrolling.',
-    quiet: 'The scene grows still. No more easy dismissals — only the system speaks.',
+    restored: "A faint pulse of relief appears as balance begins to return.",
+    denial: "Early comments read like skepticism and social media shrug.",
+    uncertainty: "The tone shifts to nervous uncertainty and paused scrolling.",
+    quiet: "The scene grows still. No more easy dismissals — only the system speaks.",
   }[stage]
 
-  const showComments = stage === 'denial' || stage === 'uncertainty'
+  const showComments = stage === "denial" || stage === "uncertainty"
 
-  const waterDarkness = Math.min((metrics.pollution + metrics.plastic) / 20, 1)
-  const temperatureShift = Math.min(1, metrics.temperature / 20)
-  const heatIntensity = Math.max(0, Math.min(1, (metrics.temperature - 8) / 12))
-  const seaTranslation = metrics.seaLevel * 0.85
-  const coralOpacity = Math.max(0.1, 1 - metrics.coralLoss / 11)
-  const fishOpacity = Math.max(0.08, 1 - (metrics.pollution + metrics.coralLoss) / 18)
-  const windDetail = Math.max(0.2, 1 - metrics.wind / 12)
-  const windMotion = (metrics.wind - 5) * 2
-  const plasticHaze = metrics.plastic / 10
-  const pollutionHaze = metrics.pollution / 10
-  const coralFade = metrics.coralLoss / 10
-  const temperatureHue = metrics.temperature * 2
+  const waterDarkness = Math.min((normalized.pollution + normalized.plastic) / 2, 1)
+  const temperatureShift = Math.min(1, normalized.temperature)
+  const heatIntensity = Math.max(0, Math.min(1, (metrics.temperature - 1.5) / 3))
+  const seaTranslation = metrics.seaLevel * 0.085
+  const coralOpacity = Math.max(0.05, 1 - normalized.coralLoss * 0.95)
+  const fishOpacity = Math.max(0.06, 1 - (normalized.pollution * 0.6 + normalized.coralLoss * 0.4))
+  const windDetail = Math.max(0.2, 1 - normalized.wind * 0.9)
+  const windMotion = (normalized.wind - 0.5) * 12
+  const plasticHaze = normalized.plastic
+  const pollutionHaze = normalized.pollution
+  const coralFade = normalized.coralLoss
+  const temperatureHue = metrics.temperature * 6
 
   const impactText = `Lands destroyed: +${Math.round(metrics.seaLevel * 1800)} m²`
-  const commentList = stage === 'denial' ? commentSets.denial : stage === 'uncertainty' ? commentSets.uncertainty : []
+  const commentList = stage === "denial" ? commentSets.denial : stage === "uncertainty" ? commentSets.uncertainty : []
   const sceneComment = useMemo(() => {
-    if (stage === 'restored') {
-      return 'Coast lines settle, the day lightens, and the current narrative softens with restored balance.'
+    if (stage === "restored") {
+      return "Coast lines settle, the day lightens, and the current narrative softens with restored balance."
     }
     if (metrics.seaLevel > 22) {
-      return 'Tide alerts flash across the dashboard as the shoreline creep becomes impossible to ignore.'
+      return "Tide alerts flash across the dashboard as the shoreline creep becomes impossible to ignore."
     }
-    if (metrics.plastic > 7) {
-      return 'Plastic ribbons drift in the water; the surface has a film and the mood of the feed darkens.'
+    if (metrics.plastic > 5) {
+      return "Plastic ribbons drift in the water; the surface has a film and the mood of the feed darkens."
     }
-    if (metrics.pollution > 7) {
-      return 'The water loses its blue sheen and a thick haze begins to settle over the scene.'
+    if (metrics.pollution > 510) {
+      return "The water loses its blue sheen and a thick haze begins to settle over the scene."
     }
-    if (metrics.coralLoss > 7) {
-      return 'The reef looks ghostly and the sea seems to have lost its saturation and life.'
+    if (metrics.coralLoss > 70) {
+      return "The reef looks ghostly and the sea seems to have lost its saturation and life."
     }
-    if (metrics.temperature > 7) {
-      return 'Heat haze rolls in and the horizon warms, changing the whole scene to a harsher glow.'
+    if (metrics.temperature > 2) {
+      return "Heat haze rolls in and the horizon warms, changing the whole scene to a harsher glow."
     }
-    if (metrics.wind < 4) {
-      return 'Currents slow and the water lies flatter, giving the scene an uneasy stillness.'
+    if (metrics.wind < -0.4) {
+      return "Currents slow and the water lies flatter, giving the scene an uneasy stillness."
     }
-    return commentList[0] || 'Each metric has a distinct effect now; the scene and the narrative move together.'
+    if (metrics.wind > 0.4) {
+      return "Stronger surface currents churn the water and push the story toward a more volatile ocean state."
+    }
+    return commentList[0] || "Each metric has a distinct effect now; the scene and the narrative move together."
   }, [metrics, stage, commentList])
 
   return (
@@ -138,13 +276,42 @@ function App() {
                   <div key={metric.key} className="control-item">
                     <div className="control-title">
                       <span>{metric.label}</span>
-                      <span className="control-value">{metrics[metric.key]}{metric.unit}</span>
+                      {editingKey === metric.key ? (
+                        <input
+                          className="control-value-input"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={commitEdit}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") commitEdit()
+                            if (e.key === "Escape") cancelEdit()
+                          }}
+                          autoFocus
+                          onFocus={(e) => e.target.select()}
+                        />
+                      ) : (
+                        <span
+                          className="control-value"
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => startEdit(metric.key)}
+                          onKeyDown={(e) => e.key === "Enter" && startEdit(metric.key)}
+                          aria-label={`Edit ${metric.label} value`}
+                        >
+                          {formatValue(metric.key, metrics[metric.key])}
+                        </span>
+                      )}
                     </div>
                     <div className="control-buttons">
                       <button
                         type="button"
                         className="control-button"
-                        onClick={() => handleChange(metric.key, -1)}
+                        onMouseDown={() => startAdjust(metric.key, -1)}
+                        onMouseUp={stopAdjust}
+                        onMouseLeave={stopAdjust}
+                        onTouchStart={() => startAdjust(metric.key, -1)}
+                        onTouchEnd={stopAdjust}
+                        onTouchCancel={stopAdjust}
                         aria-label={`Decrease ${metric.label}`}
                       >
                         –
@@ -152,7 +319,12 @@ function App() {
                       <button
                         type="button"
                         className="control-button"
-                        onClick={() => handleChange(metric.key, 1)}
+                        onMouseDown={() => startAdjust(metric.key, 1)}
+                        onMouseUp={stopAdjust}
+                        onMouseLeave={stopAdjust}
+                        onTouchStart={() => startAdjust(metric.key, 1)}
+                        onTouchEnd={stopAdjust}
+                        onTouchCancel={stopAdjust}
                         aria-label={`Increase ${metric.label}`}
                       >
                         +
@@ -162,9 +334,38 @@ function App() {
                 ))}
               </div>
 
-              <button type="button" className="button-primary" onClick={resetMetrics}>
-                Current stats — latest published release
+              <button
+                type="button"
+                className="button-primary"
+                onClick={() => setMetrics({ ...publishedMetrics })}
+              >
+                Restore — Published NOAA / NASA
               </button>
+              <button
+                type="button"
+                className="button-primary button-secondary"
+                onClick={() => setMetrics({ ...optimizeMetrics })}
+              >
+                Optimize — Perfect world ocean
+              </button>
+              <div className="stats-copy metric-references">
+                Latest published references:
+                <ul className="metric-notes">
+                  {metricConfig.map((metric) => (
+                    <li key={metric.key}>
+                      <a
+                        className="metric-note"
+                        href={publishedMetricLinks[metric.key]}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={`View ${metric.label} reference`}
+                      >
+                        <strong>{metric.label}:</strong> {publishedMetricNotes[metric.key]}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </aside>
 
@@ -193,7 +394,7 @@ function App() {
                 }}
               />
               <div className="plastic-cloud" style={{ opacity: plasticHaze * 0.42 }} />
-              {stage === 'restored' && <div className="restoration-glow" />}
+              {stage === "restored" && <div className="restoration-glow" />}
 
               <div className="scene-sea">
                 <div className="island-cluster">
@@ -268,9 +469,9 @@ function App() {
                 </div>
               ) : (
                 <p className="comments-muted">
-                  {stage === 'restored'
-                    ? 'The final light appears only once the system is balanced enough. Comments fade as the urgency becomes collective.'
-                    : 'The surface grows quiet as denial and hesitation are replaced by the weight of the changes.'}
+                  {stage === "restored"
+                    ? "The final light appears only once the system is balanced enough. Comments fade as the urgency becomes collective."
+                    : "The surface grows quiet as denial and hesitation are replaced by the weight of the changes."}
                 </p>
               )}
             </div>
