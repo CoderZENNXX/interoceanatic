@@ -1,15 +1,6 @@
 import { useMemo, useState, useRef, useEffect } from "react"
 import "./App.css"
 
-// Real units, ranges and published defaults
-// Units chosen from authoritative sources:
-// - Sea level: millimetres (mm) — NOAA reports ~94.4 mm since 1993
-// - Plastic: million tonnes per year (Mt/yr) entering oceans — OWID ~1.7 Mt/yr
-// - Pollution: atmospheric CO2 in parts per million (ppm) — NASA/NOAA 431 ppm (Apr 2026)
-// - Temperature: global annual anomaly in °C — NASA GISS ~1.19 °C (2025)
-// - Coral loss: percent (%) of reef areas affected by bleaching-level heat stress — NOAA/ICRI ~84%
-// - Wind: change in ocean surface wind expressed as percent change per year (%/yr) — literature reports ~0.074%/yr trend
-
 const metricMeta = {
   seaLevel: { unit: "cm", min: 0, max: 50, step: 0.1, decimals: 1 },
   plastic: { unit: "Mt/yr", min: 0, max: 8, step: 0.1, decimals: 1 },
@@ -28,14 +19,13 @@ const metricConfig = [
   { key: "wind", label: "Wind/Current" },
 ]
 
-// Published defaults (actual units)
 const defaultMetrics = {
-  seaLevel: 10.1, // mm since 1993 (NOAA)
-  plastic: 1.7, // Mt/yr entering oceans (Our World in Data)
-  pollution: 431, // ppm CO2 (NASA/NOAA Apr 2026)
-  temperature: 1.2, // °C anomaly (NASA 2025)
-  coralLoss: 84, // % reefs affected by bleaching heat stress (2023-2025)
-  wind: 0.075, // %/yr change in ocean surface winds (literature)
+  seaLevel: 10.1,
+  plastic: 1.7,
+  pollution: 431,
+  temperature: 1.2,
+  coralLoss: 84,
+  wind: 0.075,
 }
 
 const publishedMetrics = { ...defaultMetrics }
@@ -167,12 +157,9 @@ function App() {
     metricConfig.forEach((item) => {
       const meta = metricMeta[item.key]
       const v = metrics[item.key]
-      // For symmetric ranges (e.g., temp -10 to 10, wind -1 to 1), normalize based on absolute value
-      // so that 0 is optimal and both negatives and positives increase damage equally
       if (meta.min < 0 && meta.max > 0 && Math.abs(meta.min) === Math.abs(meta.max)) {
         out[item.key] = clamp(Math.abs(v) / meta.max, 0, 1)
       } else if (item.key === "pollution") {
-        // For pollution, 280 ppm is optimal; normalize based on distance from 280
         const optimalPollution = 280
         const maxDist = Math.max(optimalPollution - meta.min, meta.max - optimalPollution)
         out[item.key] = clamp(Math.abs(v - optimalPollution) / maxDist, 0, 1)
