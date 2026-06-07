@@ -235,6 +235,10 @@ function App() {
   }, [metrics, stage, commentList])
 
   return (
+    <>
+    <div className="rotate-warning">
+      <h2>Please rotate your device to landscape mode for the best experience.</h2>
+    </div>
     <div className="app-container">
       <div className="app-inner">
         <section className="header-panel">
@@ -465,7 +469,23 @@ function App() {
           </div>
         </div>
       </div>
+
+      <footer className="site-footer">
+        <div className="footer-inner">
+          <div className="footer-left">
+            <img src="/favicon.png" alt="Interoceanatic Logo"/>
+            Interoceanatic — Ocean Control | Tayzar Naing
+          </div>
+          <div className="footer-right">
+            <a href="https://github.com/CoderZENNXX" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="https://www.instagram.com/tayzar.naing.insta/" target="_blank" rel="noreferrer">Instagram</a>
+            <a href="https://www.tiktok.com/@tayzar.naing.tiktok" target="_blank" rel="noreferrer">TikTok</a>
+            <a href="https://www.facebook.com/tayzar.naing.fb" target="_blank" rel="noreferrer">Facebook</a>
+          </div>
+        </div>
+      </footer>
     </div>
+    </>
   )
 }
 
